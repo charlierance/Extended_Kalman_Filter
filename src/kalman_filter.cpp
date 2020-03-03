@@ -34,7 +34,7 @@ void KalmanFilter::Predict()
     P_ = F_ * P_ * Ft + Q_;
 }
 
-void KalmanFilter::CoreUpdate(const MatrixXd y)
+void KalmanFilter::CoreUpdate(const MatrixXd& y)
 {
     MatrixXd Ht = H_.transpose();
     MatrixXd S = H_ * P_ * Ht + R_;
@@ -84,6 +84,18 @@ void KalmanFilter::UpdateEKF(const VectorXd& z)
     VectorXd h_of_x = RadarMeasurementToState();
 
     VectorXd y = z - h_of_x;
+
+    if (y(1) > M_PI || y(1) < -M_PI)
+    {
+        if (y(1) > M_PI)
+        {
+            y(1) -= M_PI;
+        }
+        else
+        {
+            y(1) += M_PI;
+        }
+    }
 
     // Use same base actions as Update step
     CoreUpdate(y);

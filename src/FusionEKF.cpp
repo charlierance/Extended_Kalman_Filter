@@ -63,7 +63,7 @@ FusionEKF::FusionEKF()
           0, 0, 0, 0;
 
     // Initilise the kalman filter class
-    ekf_.Init(x_, P_, F_, H_laser_, R_radar_, Q_);
+    ekf_.Init(x_, P_, F_, H_laser_, R_laser_, Q_);
 }
 
 /**
@@ -99,10 +99,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
             ekf_.x_ << px, py, vx, vy;
 
             // As radar also measures velocity, pose and velocity equal initial covariance
-            ekf_.P_ << 10, 0, 0, 0,
-                       0, 10, 0, 0,
-                       0, 0, 10, 0,
-                       0, 0, 0, 10;
+            ekf_.P_ << 1, 0, 0, 0,
+                       0, 1, 0, 0,
+                       0, 0, 1000, 0,
+                       0, 0, 0, 1000;
 
         }
         else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER)
@@ -111,16 +111,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
             float py = measurement_pack.raw_measurements_[1];
 
             // Radar directly measures pose but velocity in inferred therefore uncertain in first measurment.
-            ekf_.P_ <<  10, 0, 0, 0,
-                        0, 10, 0, 0,
-                        0, 0, 100, 0,
-                        0, 0, 0, 100;
+            ekf_.P_ <<  1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1000, 0,
+                        0, 0, 0, 1000;
 
             ekf_.x_ << px, py, 0, 0;
         }
 
         // Set first timestamp
-        previous_timestamp_=measurement_pack.timestamp_;
+        previous_timestamp_ = measurement_pack.timestamp_;
 
         // done initializing, no need to predict or update
         is_initialized_ = true;
@@ -131,7 +131,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
      * Prediction
      */
 
-    float delta_t = measurement_pack.timestamp_ - previous_timestamp_;
+    float delta_t = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
 
     // Add time to state transition matrix
     ekf_.F_(0, 2) = delta_t;
@@ -155,11 +155,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
      * Update
      */
 
-
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR)
     {
         ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
         ekf_.R_ = R_radar_;
+
         ekf_.UpdateEKF(measurement_pack.raw_measurements_);
     }
     else
