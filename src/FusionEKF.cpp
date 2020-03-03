@@ -23,10 +23,9 @@ FusionEKF::FusionEKF()
     R_radar_ = MatrixXd(3, 3);
     H_laser_ = MatrixXd(2, 4);
     Hj_ = MatrixXd(3, 4);
-    x_ = VectorXd(4);
-    F_ = MatrixXd(4, 4);
-    Q_ = MatrixXd(4, 4);
-    P_ = MatrixXd(4, 4);
+    ekf_.F_ = MatrixXd(4, 4);
+    ekf_.P_ = MatrixXd(4, 4);
+    ekf_.x_ = VectorXd(4);
 
     // measurement covariance matrix - laser
     R_laser_ << 0.0225, 0,
@@ -42,28 +41,20 @@ FusionEKF::FusionEKF()
                 0, 1, 0, 0;
 
     // Initialise x vector
-    x_ << 1, 1, 1, 1;
+    ekf_.x_ << 1, 1, 1, 1;
 
     // Initialise the dynamics matrix with a zero time delta to be updated after first iteration
-    F_ << 1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1;
-
-    // Process covariance matrix requires time delta to infer acceleration from pose, so initialise with zeros
-    Q_ << 0, 0, 0, 0,
-          0, 0, 0, 0,
-          0, 0, 0, 0,
-          0, 0, 0, 0;
+    ekf_.F_ << 1, 0, 1, 0,
+               0, 1, 0, 1,
+               0, 0, 1, 0,
+               0, 0, 0, 1;
 
     // Initialise state uncertainty covariance matrix
-    P_ << 0, 0, 0, 0,
-          0, 0, 0, 0,
-          0, 0, 0, 0,
-          0, 0, 0, 0;
+    ekf_.P_ << 0, 0, 0, 0,
+               0, 0, 0, 0,
+               0, 0, 0, 0,
+               0, 0, 0, 0;
 
-    // Initilise the kalman filter class
-    ekf_.Init(x_, P_, F_, H_laser_, R_laser_, Q_);
 }
 
 /**
@@ -101,8 +92,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
             // As radar also measures velocity, pose and velocity equal initial covariance
             ekf_.P_ << 1, 0, 0, 0,
                        0, 1, 0, 0,
-                       0, 0, 1000, 0,
-                       0, 0, 0, 1000;
+                       0, 0, 10, 0,
+                       0, 0, 0, 10;
 
         }
         else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER)
@@ -116,7 +107,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
                         0, 0, 1000, 0,
                         0, 0, 0, 1000;
 
-            ekf_.x_ << px, py, 0, 0;
+            ekf_.x_ << px, py, 1, 1;
         }
 
         // Set first timestamp
@@ -144,10 +135,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
     float dt_3 = dt_2 * delta_t;
     float dt_4 = dt_3 * delta_t;
 
+    ekf_.Q_ = MatrixXd(4, 4);
     ekf_.Q_ << dt_4/4*noise_ax_, 0, dt_3/2*noise_ax_, 0,
-        0, dt_4/4*noise_ay_, 0, dt_3/2*noise_ay_,
-        dt_3/2*noise_ax_, 0, dt_2*noise_ax_, 0,
-        0, dt_3/2*noise_ay_, 0,  dt_2*noise_ay_;
+               0, dt_4/4*noise_ay_, 0, dt_3/2*noise_ay_,
+               dt_3/2*noise_ax_, 0, dt_2*noise_ax_, 0,
+               0, dt_3/2*noise_ay_, 0,  dt_2*noise_ay_;
 
     ekf_.Predict();
 
@@ -157,13 +149,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR)
     {
-        ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
+        cout << "RADAR" << endl;
+        Hj_ = tools.CalculateJacobian(ekf_.x_);
+        ekf_.H_ = Hj_;
         ekf_.R_ = R_radar_;
 
         ekf_.UpdateEKF(measurement_pack.raw_measurements_);
     }
     else
     {
+        cout << "LiDAR" << endl;
         ekf_.H_ = H_laser_;
         ekf_.R_ = R_laser_;
 

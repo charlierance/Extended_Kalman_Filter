@@ -41,6 +41,8 @@ void KalmanFilter::CoreUpdate(const MatrixXd& y)
     MatrixXd Si = S.inverse();
     MatrixXd K = P_ * Ht * Si;
 
+    std::cout << "H: " << H_ << std::endl;
+
     x_ = x_ + (K * y);
     long x_size = x_.size();
     MatrixXd I = MatrixXd::Identity(x_size, x_size);
@@ -85,7 +87,7 @@ void KalmanFilter::UpdateEKF(const VectorXd& z)
 
     VectorXd y = z - h_of_x;
 
-    if (y(1) > M_PI || y(1) < -M_PI)
+    while (y(1) > M_PI || y(1) < -M_PI)
     {
         if (y(1) > M_PI)
         {

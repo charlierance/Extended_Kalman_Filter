@@ -70,9 +70,9 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state)
         return Hj;
     }
 
-    Hj << p_x / root_py2, p_y / root_py2, 0, 0,
-          -1.0 * (p_y / py2), p_x / py2, 0, 0,
-          p_y * (v_x * p_y - v_y * p_x) / pow_py2, p_x * (v_y * p_x - v_x * p_y) / pow_py2, p_x / root_py2,p_y / root_py2;
+    Hj << (p_x / root_py2), (p_y / root_py2), 0, 0,
+          -(p_y / py2), (p_x / py2), 0, 0,
+          p_y * (v_x * p_y - v_y * p_x) / pow_py2, p_x * (v_y * p_x - v_x * p_y) / pow_py2, p_x / root_py2, p_y / root_py2;
 
     return Hj;
 }
