@@ -39,7 +39,7 @@ class KalmanFilter
      * @brief Core update functionality common to EKF and Normal Update.
      * @param y The y matrix calculation based on either EKF or normal Kalman Filter.
      */
-    void CoreUpdate(const Eigen::MatrixXd& y);
+    void CoreUpdate(Eigen::MatrixXd y);
 
     /**
      * @brief Updates the state by using standard Kalman Filter equations

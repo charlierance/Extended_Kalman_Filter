@@ -34,14 +34,12 @@ void KalmanFilter::Predict()
     P_ = F_ * P_ * Ft + Q_;
 }
 
-void KalmanFilter::CoreUpdate(const MatrixXd& y)
+void KalmanFilter::CoreUpdate(MatrixXd y)
 {
     MatrixXd Ht = H_.transpose();
     MatrixXd S = H_ * P_ * Ht + R_;
     MatrixXd Si = S.inverse();
     MatrixXd K = P_ * Ht * Si;
-
-    std::cout << "H: " << H_ << std::endl;
 
     x_ = x_ + (K * y);
     long x_size = x_.size();
@@ -56,9 +54,9 @@ void KalmanFilter::Update(const VectorXd& z)
     CoreUpdate(y);
 }
 
-Eigen::VectorXd KalmanFilter::RadarMeasurementToState()
+VectorXd KalmanFilter::RadarMeasurementToState()
 {
-    double rho = std::sqrt((x_(0) * x_(0)) + (x_(1) * x_(1)));
+    double rho = std::sqrt(x_(0)*x_(0) + x_(1)*x_(1));
     double phi = std::atan2(x_(1), x_(0));
     double rho_dot;
 
@@ -70,7 +68,7 @@ Eigen::VectorXd KalmanFilter::RadarMeasurementToState()
     {
         std::cout << "WARN: Zero Division Error - RadarMeasurementToState() - rho > 0.0001 - Setting to Zero"
                   << std::endl;
-        rho_dot = 0.0;
+        rho_dot = 0.0001;
     }
 
     VectorXd h_of_x(3);
@@ -83,21 +81,9 @@ Eigen::VectorXd KalmanFilter::RadarMeasurementToState()
 void KalmanFilter::UpdateEKF(const VectorXd& z)
 {
     // Convert radar measurement to state vector.
-    VectorXd h_of_x = RadarMeasurementToState();
+    VectorXd hx = RadarMeasurementToState();
 
-    VectorXd y = z - h_of_x;
-
-    while (y(1) > M_PI || y(1) < -M_PI)
-    {
-        if (y(1) > M_PI)
-        {
-            y(1) -= M_PI;
-        }
-        else
-        {
-            y(1) += M_PI;
-        }
-    }
+    VectorXd y = z - hx;
 
     // Use same base actions as Update step
     CoreUpdate(y);

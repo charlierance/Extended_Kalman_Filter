@@ -23,9 +23,7 @@ FusionEKF::FusionEKF()
     R_radar_ = MatrixXd(3, 3);
     H_laser_ = MatrixXd(2, 4);
     Hj_ = MatrixXd(3, 4);
-    ekf_.F_ = MatrixXd(4, 4);
     ekf_.P_ = MatrixXd(4, 4);
-    ekf_.x_ = VectorXd(4);
 
     // measurement covariance matrix - laser
     R_laser_ << 0.0225, 0,
@@ -40,21 +38,11 @@ FusionEKF::FusionEKF()
     H_laser_ << 1, 0, 0, 0,
                 0, 1, 0, 0;
 
-    // Initialise x vector
-    ekf_.x_ << 1, 1, 1, 1;
-
-    // Initialise the dynamics matrix with a zero time delta to be updated after first iteration
-    ekf_.F_ << 1, 0, 1, 0,
-               0, 1, 0, 1,
-               0, 0, 1, 0,
-               0, 0, 0, 1;
-
-    // Initialise state uncertainty covariance matrix
-    ekf_.P_ << 0, 0, 0, 0,
-               0, 0, 0, 0,
-               0, 0, 0, 0,
-               0, 0, 0, 0;
-
+    // Initialise p-matrix
+    ekf_.P_ << 1, 0, 0, 0,
+               0, 1, 0, 0,
+               0, 0, 1000, 0,
+               0, 0, 0, 1000;
 }
 
 /**
@@ -74,40 +62,32 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
         // first measurement
         cout << "EKF: " << endl;
 
+        // Initialise x
+        ekf_.x_ = VectorXd(4);
+        ekf_.x_ << 1, 1, 1, 1;
+
         if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR)
         {
             // Extract components from raw data
-            float rho = measurement_pack.raw_measurements_[0];
-            float phi = measurement_pack.raw_measurements_[1];
-            float rho_dot = measurement_pack.raw_measurements_[2];
+            double rho = measurement_pack.raw_measurements_[0];
+            double phi = measurement_pack.raw_measurements_[1];
+            double rho_dot = measurement_pack.raw_measurements_[2];
 
             // Convert to cartesian
-            float px = cos(phi) * rho;
-            float py = sin(phi) * rho;
-            float vx = cos(phi) * rho_dot;
-            float vy = sin(phi) * rho_dot;
+            double x = rho * cos(phi);
+            double y = rho * sin(phi);
+            double vx = rho_dot * cos(phi);
+            double vy = rho_dot * sin(phi);
 
-            ekf_.x_ << px, py, vx, vy;
-
-            // As radar also measures velocity, pose and velocity equal initial covariance
-            ekf_.P_ << 1, 0, 0, 0,
-                       0, 1, 0, 0,
-                       0, 0, 10, 0,
-                       0, 0, 0, 10;
+            ekf_.x_ << x, y, vx, vy;
 
         }
         else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER)
         {
-            float px = measurement_pack.raw_measurements_[0];
-            float py = measurement_pack.raw_measurements_[1];
+            float x = measurement_pack.raw_measurements_[0];
+            float y = measurement_pack.raw_measurements_[1];
 
-            // Radar directly measures pose but velocity in inferred therefore uncertain in first measurment.
-            ekf_.P_ <<  1, 0, 0, 0,
-                        0, 1, 0, 0,
-                        0, 0, 1000, 0,
-                        0, 0, 0, 1000;
-
-            ekf_.x_ << px, py, 1, 1;
+            ekf_.x_ << x, y, 1, 1;
         }
 
         // Set first timestamp
@@ -122,18 +102,30 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
      * Prediction
      */
 
-    float delta_t = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
+    double delta_t = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
+
+    // Reset timestamp
+    previous_timestamp_ = measurement_pack.timestamp_;
+
+    // Initialise the dynamics matrix with a zero time delta to be updated after first iteration
+    ekf_.F_=MatrixXd(4, 4);
+    ekf_.F_ << 1, 0, 0, 0,
+               0, 1, 0, 0,
+               0, 0, 1, 0,
+               0, 0, 0, 1;
 
     // Add time to state transition matrix
     ekf_.F_(0, 2) = delta_t;
     ekf_.F_(1, 3) = delta_t;
 
-    // Calculate our process noise covariance matrix
+    // Measurement noise
+    float noise_ax_ = 9.0;
+    float noise_ay_ = 9.0;
 
-    // Noise components
-    float dt_2 = delta_t * delta_t;
-    float dt_3 = dt_2 * delta_t;
-    float dt_4 = dt_3 * delta_t;
+    // Calculate our process noise covariance matrix
+    double dt_2 = delta_t * delta_t;
+    double dt_3 = dt_2 * delta_t;
+    double dt_4 = dt_3 * delta_t;
 
     ekf_.Q_ = MatrixXd(4, 4);
     ekf_.Q_ << dt_4/4*noise_ax_, 0, dt_3/2*noise_ax_, 0,
@@ -150,8 +142,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR)
     {
         cout << "RADAR" << endl;
-        Hj_ = tools.CalculateJacobian(ekf_.x_);
-        ekf_.H_ = Hj_;
+        ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
         ekf_.R_ = R_radar_;
 
         ekf_.UpdateEKF(measurement_pack.raw_measurements_);
@@ -166,6 +157,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage& measurement_pack)
     }
 
     // print the output
+    cout << "*************" << endl;
     cout << "x_ = " << ekf_.x_ << endl;
+    cout << "-------------" << endl;
     cout << "P_ = " << ekf_.P_ << endl;
+    cout << "*************" << endl;
 }

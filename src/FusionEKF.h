@@ -46,9 +46,6 @@ class FusionEKF
     Eigen::MatrixXd H_laser_;
     Eigen::MatrixXd Hj_;
 
-    // Fixed Noise Measurement
-    float noise_ax_ = 9.0;
-    float noise_ay_ = 9.0;
 };
 
 #endif  // FusionEKF_H_
