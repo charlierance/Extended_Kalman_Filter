@@ -35,16 +35,21 @@ is a linear function and therefore fits a Gaussian distribution by which the Kal
 
 <img src="https://latex.codecogs.com/gif.latex?y = z - Hx "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?S = HPH^T + R "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?K = Ph^TS^i "/>
 <br />
 <br />
+
 After the final measurment step we update the returned values of our Kalman Filter:
 <br />
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?x\prime = x + Ky "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?P\prime = (I - KH) * P "/>
 <br />
 <br />
@@ -53,20 +58,28 @@ Here we can define:
 
 <img src="https://latex.codecogs.com/gif.latex?x = \text{ Position and Velocity Estimate} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?P = \text{ The Uncertainty Covariance Matrix} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?Q = \text{ The Process Covariance Matrix} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?F = \text{ The State Transition matrix} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?u = \text{ The Motion Vector} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?z = \text{ The Measurement Vector} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?H = \text{ The Measurement Function} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?R = \text{ The Measurement Noise} "/>
 <br />
+
 <img src="https://latex.codecogs.com/gif.latex?I = \text{ Identity Matrix} "/>
 <br />
 
