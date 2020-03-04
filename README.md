@@ -14,7 +14,7 @@ The key objectives for this project were to:
 The theory behind this Kalman Filter implementation is that we will receive raw values from our sensors, therefore in the 
 case of LiDAR this will be a positional vector but with no velocity reading:
 
-<img src="https://latex.codecogs.com/gif.latex?z &= \begin{bmatrix} p^x \\ p^y \\ \end{bmatrix} " />
+<img src="http://www.sciweavers.org/tex2img.php?z &= \begin{bmatrix} p^x \\ p^y \\ \end{bmatrix} " />
 
 And in the case of Radar this will be a non linear function:
 
