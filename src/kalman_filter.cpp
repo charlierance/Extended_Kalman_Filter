@@ -85,6 +85,16 @@ void KalmanFilter::UpdateEKF(const VectorXd& z)
 
     VectorXd y = z - hx;
 
+    // Make sure within the range of -pi/pi
+    double pi = std::atan(1)*4;
+
+    while(y(1) > pi){
+        y(1) -= pi;
+    }
+
+    while(y(1) < -pi){
+        y(1) += pi;
+    }
     // Use same base actions as Update step
     CoreUpdate(y);
 }

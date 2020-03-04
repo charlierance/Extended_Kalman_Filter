@@ -1,28 +1,102 @@
-# Extended Kalman Filter Project Starter Code
-Self-Driving Car Engineer Nanodegree Program
+# Extended Kalman Filter Project
 
-In this project you will utilize a kalman filter to estimate the state of a moving object of interest with noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower than the tolerance outlined in the project rubric. 
+For this project the outline was to implement a sensor fusion of Radar and LiDAR to track a cyclist, using an Extended Kalman filter.
+The key objectives for this project were to:
 
-This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases).
+1) Be able to track a cyclist in real time and making sure to be agnostic to if it was a radar measurment or LiDAR measurement.
+2) Be able to output a tracked position in cartesian coordinates.
+3) Minimise the Root Mean Squared Error (RMSE) based off ground truth data from the dataset.
 
-This repository includes two files that can be used to set up and install [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO. Please see the uWebSocketIO Starter Guide page in the classroom within the EKF Project lesson for the required version and installation scripts.
+![Kalman_filter](./Images/Screenshot%20from%202020-03-04%2016-04-33.png)
 
-Once the install for uWebSocketIO is complete, the main program can be built and run by doing the following from the project top directory.
+## Theory of Operation
 
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./ExtendedKF
+The theory behind this Kalman Filter implementation is that we will receive raw values from our sensors, therefore in the 
+case of LiDAR this will be a positional vector but with no velocity reading:
 
-Tips for setting up your environment can be found in the classroom lesson for this project.
+<img src="https://latex.codecogs.com/gif.latex?z &= \begin{bmatrix} p^x \\ p^y \\ \end{bmatrix} " />
 
-Note that the programs that need to be written to accomplish the project are src/FusionEKF.cpp, src/FusionEKF.h, kalman_filter.cpp, kalman_filter.h, tools.cpp, and tools.h
+And in the case of Radar this will be a non linear function:
 
-The program main.cpp has already been filled out, but feel free to modify it.
+<img src="https://latex.codecogs.com/gif.latex?z &= \begin{bmatrix} \rho \\ \varphi \\ \dot{\rho} \end{bmatrix} " />
 
-Here is the main protocol that main.cpp uses for uWebSocketIO in communicating with the simulator.
+In the case of our LiDAR measurement a basic implementation of a Kalman filter will suffice as the data we are receiving
+is a linear function and therefore fits a Gaussian distribution by which the Kalman filter can derive predictions and measurements:
 
+**Prediction Step LiDAR:**
+
+<img src="https://latex.codecogs.com/gif.latex?x\prime = Fx + u \text{ Note here we assume u for the motion vector is negligable therefore ignored}" /> 
+<br />
+<img src="https://latex.codecogs.com/gif.latex?P\prime = FPF^T + Q"/>
+<br />
+<br />
+
+**Measurement Step LiDAR**
+
+<img src="https://latex.codecogs.com/gif.latex?y = z - Hx "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?S = HPH^T + R "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?K = Ph^TS^i "/>
+<br />
+<br />
+After the final measurment step we update the returned values of our Kalman Filter:
+<br />
+<br />
+<img src="https://latex.codecogs.com/gif.latex?x\prime = x + Ky "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?P\prime = (I - KH) * P "/>
+<br />
+<br />
+
+Here we can define:
+
+<img src="https://latex.codecogs.com/gif.latex?x = \text{ Position and Velocity Estimate} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?P = \text{ The Uncertainty Covariance Matrix} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?Q = \text{ The Process Covariance Matrix} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?F = \text{ The State Transition matrix} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?u = \text{ The Motion Vector} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?z = \text{ The Measurement Vector} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?H = \text{ The Measurement Function} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?R = \text{ The Measurement Noise} "/>
+<br />
+<img src="https://latex.codecogs.com/gif.latex?I = \text{ Identity Matrix} "/>
+<br />
+
+Here we can see that based on the prediction on measurement update the velocity for LiDAR will initially start in a high 
+state of uncertainty. However as the filter progresses the prediction can start to build a more accurate idea of the 
+defined position and a later time t therefore by knowing t and the projected position, velocity can be inferred.
+
+**Radar Measurement**
+
+In the case of radar we have to take a slightly different approach due to the fact that radar will need to be converted
+from the cartesian prediction to the polar coordinates received by the radar, this leaves us an issue as we are required to use the arctangent which produces a non linear function:
+
+<img src="https://latex.codecogs.com/gif.latex?h(x\prime) &= \begin{pmatrix} \rho \\ \phi \\ \dot{\rho} \end{pmatrix} &= \begin{pmatrix} \sqrt{p\prime_x^2 + p\prime_y^2} \\ \arctan{p\prime_y / p\prime_x} \\ \nicefrac{(p\prime_x v\prime_x + p\prime_y v\prime_y)/}{(\sqrt{p\prime_x^2 + p\prime_y^2)}} \end{pmatrix}" />
+<br />
+<br />
+
+So the adaption here is in the measurement step as dude to the fact we are using a linear model there is no need to change the prediction step.
+So when it comes to measuring for Radar we convert firstly the H function to become a jacobian matrix based on the partial derivatives of the radar measurements with the state vector:
+
+<img src="https://latex.codecogs.com/gif.latex?H = H_\text{jacobian} "/>
+<br />
+
+We then also adapt out y calculation to take into account out h(x) function to calculate the polar coordiantes:
+
+<img src="https://latex.codecogs.com/gif.latex?y = x - h(x\prime) "/>
+<br />
+
+Finally the data defines the measurement that is received and the filter performs the update and the filter performs the measurement step accordingly.
+
+## Data Input/Output
 
 **INPUT**: values provided by the simulator to the c++ program
 
@@ -43,7 +117,11 @@ Here is the main protocol that main.cpp uses for uWebSocketIO in communicating w
 
 ["rmse_vy"]
 
----
+## Links
+
+- For more info on the specific data structure see [here](./Docs/Input_Output%20File%20Format.txt). 
+- For a sample dataset see [here](./data/obj_pose-laser-radar-synthetic-input.txt).
+- To download the simulator to run this tool see [here](https://github.com/udacity/self-driving-car-sim/releases).
 
 ## Other Important Dependencies
 
@@ -65,70 +143,3 @@ Here is the main protocol that main.cpp uses for uWebSocketIO in communicating w
 3. Compile: `cmake .. && make` 
    * On windows, you may need to run: `cmake .. -G "Unix Makefiles" && make`
 4. Run it: `./ExtendedKF `
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Generating Additional Data
-
-This is optional!
-
-If you'd like to generate your own radar and lidar data, see the
-[utilities repo](https://github.com/udacity/CarND-Mercedes-SF-Utilities) for
-Matlab scripts that can generate additional data.
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2 (three-term version) or Term 1 (two-term version)
-of CarND. If you are enrolled, see the Project Resources page in the classroom
-for instructions and the project rubric.
-
-## Hints and Tips!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-* Students have reported rapid expansion of log files when using the term 2 simulator.  This appears to be associated with not being connected to uWebSockets.  If this does occur,  please make sure you are conneted to uWebSockets. The following workaround may also be effective at preventing large log files.
-
-    + create an empty log file
-    + remove write permissions so that the simulator can't write to log
- * Please note that the ```Eigen``` library does not initialize ```VectorXd``` or ```MatrixXd``` objects with zeros upon creation.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to ensure
-that students don't feel pressured to use one IDE or another.
-
-However! We'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Regardless of the IDE used, every submitted project must
-still be compilable with cmake and make.
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
