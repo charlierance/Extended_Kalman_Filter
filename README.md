@@ -14,33 +14,33 @@ The key objectives for this project were to:
 The theory behind this Kalman Filter implementation is that we will receive raw values from our sensors, therefore in the 
 case of LiDAR this will be a positional vector but with no velocity reading:
 
-<img src="http://chart.apis.google.com/chart?cht=tx&chl=z=\begin{bmatrix} p^x \\ p^y \\*\end{bmatrix}" />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=z = \begin{bmatrix} p^x \\ p^y \end{bmatrix}" />
 
 And in the case of Radar this will be a non linear function:
 
-<img src="https://latex.codecogs.com/gif.latex?z &= \begin{bmatrix} \rho \\ \varphi \\ \dot{\rho} \end{bmatrix} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=z = \begin{bmatrix} \rho \\ \varphi \\ \dot{\rho} \end{bmatrix} " />
 
 In the case of our LiDAR measurement a basic implementation of a Kalman filter will suffice as the data we are receiving
 is a linear function and therefore fits a Gaussian distribution by which the Kalman filter can derive predictions and measurements:
 
 **Prediction Step LiDAR:**
 
-<img src="https://latex.codecogs.com/gif.latex?x\prime = Fx + u \text{ Note here we assume u for the motion vector is negligable therefore ignored}" /> 
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=x\prime = Fx + u \text{ %20Note%20 here%20 we%20 assume%20 u%20 for%20 the%20 motion%20 vector%20 is%20 negligable%20 therefore%20 ignored%20}" /> 
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?P\prime = FPF^T + Q" />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=P\prime = FPF^T + Q" />
 <br />
 <br />
 
 **Measurement Step LiDAR**
 
-<img src="https://latex.codecogs.com/gif.latex?y = z - Hx " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=y = z - Hx " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?S = HPH^T + R " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=S = HPH^T + R " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?K = Ph^TS^i " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=K = Ph^TS^i " />
 <br />
 <br />
 
@@ -48,40 +48,40 @@ After the final measurment step we update the returned values of our Kalman Filt
 <br />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?x\prime = x + Ky " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=x\prime = x + Ky " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?P\prime = (I - KH) * P " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=P\prime = (I - KH) * P " />
 <br />
 <br />
 
 Here we can define:
 
-<img src="https://latex.codecogs.com/gif.latex?x = \text{ Position and Velocity Estimate} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=x = \text{ Position and Velocity Estimate} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?P = \text{ The Uncertainty Covariance Matrix} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=P = \text{ The Uncertainty Covariance Matrix} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?Q = \text{ The Process Covariance Matrix} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=Q = \text{ The Process Covariance Matrix} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?F = \text{ The State Transition matrix} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=F = \text{ The State Transition matrix} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?u = \text{ The Motion Vector} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=u = \text{ The Motion Vector} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?z = \text{ The Measurement Vector} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=z = \text{ The Measurement Vector} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?H = \text{ The Measurement Function} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=H = \text{ The Measurement Function} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?R = \text{ The Measurement Noise} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=R = \text{ The Measurement Noise} " />
 <br />
 
-<img src="https://latex.codecogs.com/gif.latex?I = \text{ Identity Matrix} " />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=I = \text{ Identity Matrix} " />
 <br />
 
 Here we can see that based on the prediction on measurement update the velocity for LiDAR will initially start in a high 
@@ -93,19 +93,20 @@ defined position and a later time t therefore by knowing t and the projected pos
 In the case of radar we have to take a slightly different approach due to the fact that radar will need to be converted
 from the cartesian prediction to the polar coordinates received by the radar, this leaves us an issue as we are required to use the arctangent which produces a non linear function:
 
-<img src="https://latex.codecogs.com/gif.latex?h(x\prime) &= \begin{pmatrix} \rho \\ \phi \\ \dot{\rho} \end{pmatrix} &= \begin{pmatrix} \sqrt{p\prime_x^2 + p\prime_y^2} \\ \arctan{p\prime_y / p\prime_x} \\ \nicefrac{(p\prime_x v\prime_x + p\prime_y v\prime_y)/}{(\sqrt{p\prime_x^2 + p\prime_y^2)}} \end{pmatrix}" />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=h(x\prime) = \begin{pmatrix} \rho \\ \phi \\ \dot{\rho} \end{pmatrix}" />
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=h(x\prime)= \begin{pmatrix} \sqrt{p\prime_x^2 + p\prime_y^2} \\ \arctan{p\prime_y / p\prime_x} \\ \frac{(p\prime_x v\prime_x + p\prime_y v\prime_y)/}{(\sqrt{p\prime_x^2 + p\prime_y^2)}} \end{pmatrix}" />
 <br />
 <br />
 
 So the adaption here is in the measurement step as dude to the fact we are using a linear model there is no need to change the prediction step.
 So when it comes to measuring for Radar we convert firstly the H function to become a jacobian matrix based on the partial derivatives of the radar measurements with the state vector:
 
-<img src="https://latex.codecogs.com/gif.latex?H = H_\text{jacobian} "/>
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=H = H_\text{jacobian} "/>
 <br />
 
 We then also adapt out y calculation to take into account out h(x) function to calculate the polar coordiantes:
 
-<img src="https://latex.codecogs.com/gif.latex?y = x - h(x\prime) "/>
+<img src="http://chart.apis.google.com/chart?cht=tx&chl=y = x - h(x\prime) "/>
 <br />
 
 Finally the data defines the measurement that is received and the filter performs the update and the filter performs the measurement step accordingly.
