@@ -89,11 +89,11 @@ void KalmanFilter::UpdateEKF(const VectorXd& z)
     double pi = std::atan(1)*4;
 
     while(y(1) > pi){
-        y(1) -= pi;
+        y(1) -= 2 * pi;
     }
 
     while(y(1) < -pi){
-        y(1) += pi;
+        y(1) += 2 * pi;
     }
     // Use same base actions as Update step
     CoreUpdate(y);
